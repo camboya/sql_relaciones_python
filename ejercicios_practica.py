@@ -90,6 +90,36 @@ def fill():
     # primero insertado el tutor.
     # No olvidar activar las foreign_keys!
 
+    conn = sqlite3.connect('secundaria.db')
+    conn.execute("PRAGMA foreign_keys = 1")
+    c = conn.cursor()
+
+    c.execute("""
+            INSERT INTO tutor (name)
+            VALUES ('Franco'),('Viviana'),('Luciano');
+            """)
+    
+    group = [('Javier', 21, 2, 'Franco'),
+            ('Mariela', 18, 1, 'Ricardo'),
+            ('Alejo', 13, 1, 'Mateo'),
+            ('Luciana', 15, 2, 'Ricardo'),
+            ('Juan', 17, 3, 'Ricardo'),
+            ('Julian', 19, 2, 'Viviana'),
+            ('Gisella', 16, 4, 'Viviana'),
+            ('Nahuel', 14, 5, 'Viviana'),
+            ('Pedro', 20, 6, 'Luciano'),
+            ('Nina', 12, 4, 'Luciano')]
+
+    c.executemany("""
+            INSERT INTO estudiante (name, age, grade, fk_tutor_id)
+            SELECT ?, ?, ?, tutor.id 
+            FROM tutor
+            WHERE tutor.name = ?;
+            """, group)
+    
+    conn.commit()
+    conn.close()
+
 
 def fetch():
     print('Comprovemos su contenido, ¿qué hay en la tabla?')
@@ -103,6 +133,26 @@ def fetch():
     # columnas que deben aparecer en el print:
     # id / name / age / grade / tutor_nombre
 
+    conn = sqlite3.connect('secundaria.db')
+    c = conn.cursor()
+
+    c.execute("""
+            SELECT s.id, s.name, s.age, s.grade, t.name AS tutor_nombre
+            FROM estudiante AS s, tutor AS t
+            WHERE s.fk_tutor_id = t.id;
+            """)
+    
+    while True:
+        row = c.fetchone()
+        
+        if row is None:
+            break
+        
+        print(row)
+    
+    conn.commit()
+    conn.close()
+
 
 def search_by_tutor(tutor):
     print('Operación búsqueda!')
@@ -114,6 +164,44 @@ def search_by_tutor(tutor):
     # las siguientes columnas por fila encontrada:
     # id / name / age / tutor_nombre
 
+    conn = sqlite3.connect('secundaria.db')
+    c = conn.cursor()
+
+    c.execute("""
+            SELECT s.id, s.name, s.age, t.name AS tutor_nombre
+            FROM estudiante AS s, tutor AS t
+            WHERE s.fk_tutor_id = t.id AND t.name = ?;
+            """, (tutor,))
+    
+    print('Los estudiantes que tienen como Tutor a {} son:' .format(tutor))
+
+    while True:
+        row = c.fetchone()
+        
+        if row is None:
+            break
+        
+        print(row)
+    
+    conn.commit()
+    conn.close()
+
+def insert(grade):
+    print('Nuevos ingresos!')
+    # Utilizar  sentencia INSERT para ingresar nuevos estudiantes
+    # a la secundaria
+
+    conn = sqlite3.connect('secundaria.db')
+    c = conn.cursor()
+
+    c.execute("""
+            INSERT INTO estudiante (name, age)
+            values(?,?);
+            """, grade)
+    
+    conn.commit()
+    conn.close()    
+
 
 def modify(id, name):
     print('Modificando la tabla')
@@ -122,6 +210,18 @@ def modify(id, name):
     # modificar el tutor asignado (fk_tutor_id --> id) por aquel que coincida
     # con el nombre del tutor pasado como parámetro
 
+    conn = sqlite3.connect('secundaria.db')
+    c = conn.cursor()
+
+    c.execute("""
+            UPDATE tutor
+            SET name = ?
+            WHERE id = ?
+            """, (name, id))
+    
+    conn.commit()
+    conn.close()
+
 
 def count_grade(grade):
     print('Estudiante por grado')
@@ -129,19 +229,33 @@ def count_grade(grade):
     # se encuentran cursando el grado "grade" pasado como parámetro
     # Imprimir en pantalla el resultado
 
+    conn = sqlite3.connect('secundaria.db')
+    c = conn.cursor()
+
+    c.execute("""
+            SELECT COUNT(id)
+            FROM estudiante
+            WHERE grade = ?
+            """, (grade,))
+
+    row = c.fetchall()
+    print(row)
+
+    conn.close()
+
 
 if __name__ == '__main__':
     print("Bienvenidos a otra clase de Inove con Python")
     create_schema()   # create and reset database (DB)
-    # fill()
-    # fetch()
+    fill()
+    fetch()
 
     tutor = 'nombre_tutor'
-    # search_by_tutor(tutor)
+    search_by_tutor(tutor)
 
     nuevo_tutor = 'nombre_tutor'
     id = 2
-    # modify(id, nuevo_tutor)
+    modify(id, nuevo_tutor)
 
     grade = 2
-    # count_grade(grade)
+    count_grade(grade)
